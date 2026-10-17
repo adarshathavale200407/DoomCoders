@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PriorityBadge, StatusBadge } from "../components/Badges.jsx";
 import PriorityBreakdown from "../components/PriorityBreakdown.jsx";
+import StaffActions from "../components/StaffActions.jsx";
 import StaticMap from "../components/StaticMap.jsx";
 import Timeline from "../components/Timeline.jsx";
 import { Alert, Card, PageLoader } from "../components/ui.jsx";
@@ -68,6 +69,14 @@ export default function IssueDetail() {
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [teams, setTeams] = useState([]);
+  const [reloadKey, setReloadKey] = useState(0);
+  const reload = useCallback(() => setReloadKey((k) => k + 1), []);
+  const isStaff = user && user.role !== "citizen";
+
+  useEffect(() => {
+    if (isStaff) api.get("/meta").then((m) => setTeams(m.teams)).catch(() => {});
+  }, [isStaff]);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,7 +105,7 @@ export default function IssueDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, reloadKey]);
 
   async function upvote() {
     if (!user) return navigate("/login", { state: { from: `/issues/${id}` } });
@@ -217,7 +226,16 @@ export default function IssueDetail() {
             <Timeline entries={issue.timeline} />
           </Card>
 
-          {/* Step 8: admin / team actions (assign, update status, merge) go here */}
+          {isStaff && (
+            <StaffActions
+              issue={issue}
+              user={user}
+              teams={teams.length ? teams : ["Roads", "Water", "Sanitation", "Electricity"]}
+              related={related}
+              onChange={(updated) => setIssue((prev) => ({ ...prev, ...updated }))}
+              onMerged={reload}
+            />
+          )}
         </div>
 
         {/* ---------- side column ---------- */}

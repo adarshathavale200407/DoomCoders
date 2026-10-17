@@ -23,8 +23,16 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  // `requireRole` (e.g. "admin") is checked before anything is stored, so a
+  // wrong-role login never becomes a session.
   const login = useCallback(
-    (email, password) => api.post("/auth/login", { email, password }).then(finish),
+    async (email, password, requireRole) => {
+      const data = await api.post("/auth/login", { email, password });
+      if (requireRole && data.user.role !== requireRole) {
+        throw new Error("This account does not have administrator access. Please use an admin account.");
+      }
+      return finish(data);
+    },
     [finish]
   );
   const register = useCallback(

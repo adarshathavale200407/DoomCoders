@@ -28,6 +28,7 @@ export default function Layout() {
     { to: "/stats", label: "Statistics" },
     ...(user?.role === "citizen" ? [{ to: "/dashboard", label: "My dashboard" }] : []),
     ...(user && user.role !== "citizen" ? [{ to: "/manage", label: "Manage" }] : []),
+    ...(user?.role === "admin" ? [{ to: "/admin", label: "Admin" }] : []),
   ];
 
   const linkClass = ({ isActive }) =>

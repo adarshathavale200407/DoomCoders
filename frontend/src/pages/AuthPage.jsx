@@ -52,19 +52,7 @@ export default function AuthPage({ mode }) {
     try {
       const authenticatedUser = isRegister
         ? await register(form.name, form.email, form.password)
-        : await login(form.email, form.password);
-
-      // Admin login uses the existing authentication mechanism.
-      // A user's role determines which area they can access.
-      if (isAdminLogin && authenticatedUser.role !== "admin") {
-        setError(
-          "This account does not have administrator access. Please use an admin account."
-        );
-
-        // Do not navigate to an admin page for a non-admin.
-        // The protected routes and backend must enforce authorization.
-        return;
-      }
+        : await login(form.email, form.password, isAdminLogin ? "admin" : undefined);
 
       const fallback =
         authenticatedUser.role === "admin"

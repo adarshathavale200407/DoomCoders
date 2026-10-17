@@ -28,8 +28,6 @@ async def current_user_optional(
     user = await db.users.find_one({"_id": to_oid(payload["sub"], "User")})
     if user is None:
         raise HTTPException(status_code=401, detail="User no longer exists")
-    return user
-
     if user.get("banned"):
         raise HTTPException(status_code=403, detail="Your account has been suspended")
     return user

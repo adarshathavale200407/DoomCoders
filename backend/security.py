@@ -3,6 +3,9 @@ import time
 
 import bcrypt
 import jwt
+from dotenv import load_dotenv
+
+load_dotenv()
 
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-only-secret-change-me-in-production-0123456789")
 JWT_ALGORITHM = "HS256"

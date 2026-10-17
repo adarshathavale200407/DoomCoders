@@ -121,7 +121,7 @@ export default function ReportIssue() {
     e.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) return setPhotoError("Please choose an image file.");
-    if (file.size > 8 * 1024 * 1024) return setPhotoError("Image must be under 8 MB.");
+    if (file.size > 5 * 1024 * 1024) return setPhotoError("Image must be under 5 MB.");
     setPhotoError("");
     setPhoto({ url: "", preview: URL.createObjectURL(file), uploading: true });
     try {
@@ -321,8 +321,8 @@ export default function ReportIssue() {
                 <label className="flex cursor-pointer flex-col items-center gap-1 rounded-xl border-2 border-dashed border-line px-4 py-8 text-center hover:border-brand/60">
                   <span className="text-2xl">📷</span>
                   <span className="text-sm font-semibold">Take or choose a photo</span>
-                  <span className="text-xs text-muted">JPG or PNG, up to 8 MB</span>
-                  <input type="file" accept="image/*" capture="environment" onChange={onFile} className="hidden" />
+                  <span className="text-xs text-muted">JPG, PNG or WebP, up to 5 MB</span>
+                  <input type="file" accept="image/*" onChange={onFile} className="hidden" />
                 </label>
               )
             ) : (

@@ -177,3 +177,65 @@ def test_helpers():
     assert text_similarity("Pothole on Station Road", "Garbage near temple") < 0.3
     assert text_similarity("", "anything") == 0.0
     assert priority_label(70) == "Critical" and priority_label(10) == "Low"
+
+
+def test_banned_user_is_locked_out(client):
+    asyncio.run(create_users(main.app.state.db))
+    admin = login(client, "admin@civicfix.app", "admin123")
+    citizen = login(client, "citizen@civicfix.app", "citizen123")
+    users = client.get("/admin/users?search=citizen@civicfix.app", headers=admin).json()["items"]
+    uid = users[0]["id"]
+
+    assert client.patch(f"/admin/users/{uid}/ban", json={"banned": True}, headers=admin).status_code == 200
+    # existing token stops working immediately, and new logins are refused
+    assert client.get("/auth/me", headers=citizen).status_code == 403
+    r = client.post("/auth/login", json={"email": "citizen@civicfix.app", "password": "citizen123"})
+    assert r.status_code == 403
+
+    client.patch(f"/admin/users/{uid}/ban", json={"banned": False}, headers=admin)
+    assert client.get("/auth/me", headers=citizen).status_code == 200
+
+
+def test_admin_endpoints_require_admin(client):
+    asyncio.run(create_users(main.app.state.db))
+    citizen = login(client, "citizen@civicfix.app", "citizen123")
+    roads = login(client, "roads@civicfix.app", "team123")
+    for h in (citizen, roads, {}):
+        assert client.get("/admin/overview", headers=h).status_code in (401, 403)
+        assert client.get("/admin/users", headers=h).status_code in (401, 403)
+
+
+def test_admin_notes_delete_and_dismiss(client):
+    asyncio.run(create_users(main.app.state.db))
+    citizen = login(client, "citizen@civicfix.app", "citizen123")
+    priya = login(client, "priya@civicfix.app", "citizen123")
+    admin = login(client, "admin@civicfix.app", "admin123")
+
+    a = report(client, citizen)
+    b = report(client, priya, lat=LAT + 0.0003, title="Pothole at Station Road")
+    assert b["possible_duplicate_of"] == a["id"]
+    q = client.get("/admin/duplicates", headers=admin).json()
+    assert len(q) == 1 and q[0]["id"] == b["id"]
+
+    r = client.post(f"/admin/issues/{b['id']}/dismiss-duplicate", headers=admin)
+    assert r.status_code == 200 and r.json()["possible_duplicate_of"] is None
+    assert client.get(f"/issues/{a['id']}").json()["duplicate_count"] == 0
+
+    r = client.post(f"/admin/issues/{a['id']}/note", json={"note": "Inspecting"}, headers=admin)
+    assert r.json()["timeline"][-1]["note"] == "Inspecting"
+
+    assert client.delete(f"/admin/issues/{b['id']}", headers=admin).status_code == 204
+    assert client.get(f"/issues/{b['id']}").status_code == 404
+
+
+def test_photo_upload(client):
+    a = register(client, "Asha", "a@example.org")
+    png = b"\x89PNG\r\n\x1a\n" + b"0" * 64
+    assert client.post("/uploads", files={"file": ("x.png", png, "image/png")}).status_code in (401, 403)
+    r = client.post("/uploads", files={"file": ("x.png", png, "image/png")}, headers=a)
+    assert r.status_code == 201, r.text
+    url = r.json()["url"]
+    got = client.get("/uploads/" + url.rsplit("/", 1)[1])
+    assert got.status_code == 200 and got.headers["content-type"] == "image/png"
+    bad = client.post("/uploads", files={"file": ("x.png", b"<script>", "image/png")}, headers=a)
+    assert bad.status_code == 400

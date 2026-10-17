@@ -1,6 +1,4 @@
 // All admin + issue-action calls in one place.
-// ASSUMPTION: ./api.js exposes api.get/post/patch/delete(path, body?) and throws Error with a readable message.
-// If your client uses different method names, fix them here only.
 import { api } from "./api.js";
 
 const qs = (params = {}) => {
@@ -23,8 +21,8 @@ export const adminApi = {
   setBan: (id, banned) => api.patch(`/admin/users/${id}/ban`, { banned }),
   setRole: (id, role, team) => api.patch(`/admin/users/${id}/role`, { role, team: team || null }),
 
-  // Shared endpoints from routers/issues.py. ASSUMPTION: body shapes below; check against issues.py.
-  setStatus: (id, status) => api.patch(`/issues/${id}/status`, { status }),
+  // Shared endpoints from routers/issues.py.
+  setStatus: (id, status, note) => api.patch(`/issues/${id}/status`, { status, note: note || null }),
   assign: (id, team) => api.patch(`/issues/${id}/assign`, { team }),
-  merge: (id, targetId) => api.post(`/issues/${id}/merge`, { target_id: targetId }),
+  merge: (id, targetId) => api.post(`/issues/${id}/merge`, { duplicate_of: targetId }),
 };

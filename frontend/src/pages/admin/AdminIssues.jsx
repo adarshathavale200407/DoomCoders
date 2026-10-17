@@ -7,6 +7,8 @@ import { Empty, Pagination, errMsg, options, selectCls, useDebounced } from "../
 import { Alert, Button, Card, PageLoader } from "../../components/ui.jsx";
 
 const STATUS_OPTS = Object.entries(STATUS_META).map(([value, m]) => ({ value, label: m.label }));
+// The API only accepts these as manual updates (reported/duplicate are set by the system).
+const WORK_STATUSES = ["assigned", "in_progress", "resolved"];
 
 export default function AdminIssues() {
   const meta = useMeta();
@@ -116,13 +118,21 @@ export default function AdminIssues() {
                         {pr && <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${PRIORITY_CLS[pr] || ""}`}>{pr}</span>}
                       </td>
                       <td className="px-4 py-3">
-                        <select className={selectCls} disabled={busy} value={i.status}
-                                onChange={(e) => act(i.id, () => adminApi.setStatus(i.id, e.target.value))}>
-                          {STATUS_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                        </select>
+                        {i.status === "duplicate" ? (
+                          <span className="text-muted">Merged duplicate</span>
+                        ) : (
+                          <select className={selectCls} disabled={busy || !i.assigned_team} value={i.status}
+                                  title={i.assigned_team ? "" : "Assign a team first"}
+                                  onChange={(e) => act(i.id, () => adminApi.setStatus(i.id, e.target.value))}>
+                            {!WORK_STATUSES.includes(i.status) && (
+                              <option value={i.status} disabled>{STATUS_META[i.status]?.label || i.status}</option>
+                            )}
+                            {WORK_STATUSES.map((v) => <option key={v} value={v}>{STATUS_META[v].label}</option>)}
+                          </select>
+                        )}
                       </td>
                       <td className="px-4 py-3">
-                        <select className={selectCls} disabled={busy} value={i.assigned_team || ""}
+                        <select className={selectCls} disabled={busy || i.status === "duplicate" || i.status === "resolved"} value={i.assigned_team || ""}
                                 onChange={(e) => e.target.value && act(i.id, () => adminApi.assign(i.id, e.target.value))}>
                           <option value="">Unassigned</option>
                           {teams.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}

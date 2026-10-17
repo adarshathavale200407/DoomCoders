@@ -2,13 +2,14 @@ import os
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
-from routers import admin, auth, issues, stats  # noqa: E402
 
+load_dotenv()  # must run before anything reads os.environ (security.py reads JWT_SECRET)
 
-load_dotenv()
+from fastapi import FastAPI  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from motor.motor_asyncio import AsyncIOMotorClient  # noqa: E402
+
+from routers import admin, auth, issues, stats, uploads  # noqa: E402
 
 MONGODB_URI = os.getenv("MONGODB_URI", "")
 DB_NAME = os.getenv("DB_NAME", "civicfix")
@@ -18,8 +19,6 @@ ALLOWED_ORIGINS = [
     for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
     if o.strip()
 ]
-
-from routers import auth, issues, stats  # noqa: E402  (after load_dotenv)
 
 
 @asynccontextmanager
@@ -31,6 +30,7 @@ async def lifespan(app: FastAPI):
             await app.state.db.users.create_index("email", unique=True)
             await app.state.db.issues.create_index([("status", 1), ("category", 1)])
             await app.state.db.issues.create_index("reporter_id")
+            await app.state.db.issues.create_index("assigned_team")
         except Exception:  # noqa: BLE001 - never block startup on index creation
             pass
     yield
@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
         app.state.client.close()
 
 
-app = FastAPI(title="Civic Fix API", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="Civic Fix API", version="0.3.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -52,6 +52,7 @@ app.include_router(auth.router)
 app.include_router(issues.router)
 app.include_router(stats.router)
 app.include_router(admin.router)
+app.include_router(uploads.router)
 
 
 @app.get("/")

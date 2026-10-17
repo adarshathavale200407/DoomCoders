@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { adminApi } from "../../lib/adminApi.js";
-import { STATUS_META } from "../../lib/format.js";
+import { api } from "../../lib/api.js";
+import { PRIORITY_CLS, STATUS_META, formatHours } from "../../lib/format.js";
 import { errMsg } from "../../components/admin/bits.jsx";
 import { Alert, Card, PageLoader } from "../../components/ui.jsx";
 
@@ -26,11 +27,12 @@ export default function AdminDashboard() {
     // Status totals come from the list endpoint's `total` (page_size=1 keeps it cheap).
     Promise.all([
       adminApi.overview(),
+      api.get("/stats"),
       ...STATUSES.map((s) => adminApi.issues({ status: s, page_size: 1 })),
     ])
-      .then(([overview, ...pages]) => {
+      .then(([overview, stats, ...pages]) => {
         if (off) return;
-        setData({ overview, counts: Object.fromEntries(STATUSES.map((s, i) => [s, pages[i].total])) });
+        setData({ overview, stats, counts: Object.fromEntries(STATUSES.map((s, i) => [s, pages[i].total])) });
       })
       .catch((e) => !off && setError(errMsg(e)));
     return () => { off = true; };
@@ -38,7 +40,7 @@ export default function AdminDashboard() {
 
   if (error) return <Alert>{error}</Alert>;
   if (!data) return <PageLoader />;
-  const { overview, counts } = data;
+  const { overview, stats, counts } = data;
 
   return (
     <div className="space-y-8">
@@ -58,6 +60,54 @@ export default function AdminDashboard() {
           {STATUSES.map((s) => (
             <Tile key={s} label={STATUS_META[s].label} value={counts[s]} to={`/admin/issues?status=${s}`} />
           ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 font-display text-lg font-semibold">Resolution performance</h2>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <Tile label="Resolution rate" value={`${stats.resolution_rate}%`} />
+          <Tile label="Average time to resolve" value={formatHours(stats.avg_resolution_hours)} />
+          <Tile label="Median time to resolve" value={formatHours(stats.median_resolution_hours)} />
+          <Tile label="Duplicates merged" value={stats.duplicates_merged} />
+        </div>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-2">
+        <div>
+          <h2 className="mb-3 font-display text-lg font-semibold">Open reports by priority</h2>
+          <Card className="flex flex-wrap gap-3 p-5">
+            {Object.entries(stats.open_by_priority).map(([label, n]) => (
+              <span key={label} className={`rounded-full px-3 py-1.5 text-sm font-semibold ${PRIORITY_CLS[label] || ""}`}>
+                {label}: {n}
+              </span>
+            ))}
+          </Card>
+        </div>
+        <div>
+          <h2 className="mb-3 font-display text-lg font-semibold">Team workload</h2>
+          <Card className="overflow-x-auto p-0">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-line text-muted">
+                <tr>
+                  <th className="px-4 py-2.5 font-medium">Team</th>
+                  <th className="px-4 py-2.5 font-medium">Open</th>
+                  <th className="px-4 py-2.5 font-medium">Resolved</th>
+                  <th className="px-4 py-2.5 font-medium">Avg. fix time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(stats.by_team).map(([team, t]) => (
+                  <tr key={team} className="border-b border-line/60 last:border-0">
+                    <td className="px-4 py-2.5 font-semibold">{team}</td>
+                    <td className="px-4 py-2.5">{t.open}</td>
+                    <td className="px-4 py-2.5">{t.resolved}</td>
+                    <td className="px-4 py-2.5">{formatHours(t.avg_resolution_hours)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
         </div>
       </section>
 

@@ -32,11 +32,9 @@ async def login(body: LoginIn, db=Depends(get_db)):
     user = await db.users.find_one({"email": body.email.lower()})
     if not user or not verify_password(body.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
-    return {"token": create_token(str(user["_id"]), user["role"]), "user": public_user(user)}
-    if not user or not verify_password(body.password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail="Incorrect email or password")
     if user.get("banned"):
         raise HTTPException(status_code=403, detail="Your account has been suspended")
+    return {"token": create_token(str(user["_id"]), user["role"]), "user": public_user(user)}
 
 
 @router.get("/me")
