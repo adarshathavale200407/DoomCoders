@@ -1,6 +1,9 @@
+
 import { Route, Routes } from "react-router-dom";
+
 import Layout from "./components/Layout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+
 import AuthPage from "./pages/AuthPage.jsx";
 import ComingSoon from "./pages/ComingSoon.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -11,6 +14,7 @@ import Manage from "./pages/Manage.jsx";
 import NearbyMap from "./pages/NearbyMap.jsx";
 import ReportIssue from "./pages/ReportIssue.jsx";
 import Stats from "./pages/Stats.jsx";
+
 import AdminLayout from "./pages/admin/AdminLayout.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import AdminIssues from "./pages/admin/AdminIssues.jsx";
@@ -21,25 +25,101 @@ export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
+        {/* Public pages */}
         <Route index element={<Home />} />
-        <Route path="login" element={<AuthPage mode="login" />} />
-        <Route path="register" element={<AuthPage mode="register" />} />
+
+        <Route
+          path="login"
+          element={<AuthPage mode="login" />}
+        />
+
+        <Route
+          path="register"
+          element={<AuthPage mode="register" />}
+        />
+
+        {/* Dedicated admin login page */}
+        <Route
+          path="admin/login"
+          element={<AuthPage mode="admin-login" />}
+        />
+
         <Route path="issues" element={<Issues />} />
-        <Route path="issues/:id" element={<IssueDetail />} />
+
+        <Route
+          path="issues/:id"
+          element={<IssueDetail />}
+        />
+
         <Route path="map" element={<NearbyMap />} />
         <Route path="stats" element={<Stats />} />
-        <Route path="report" element={
-          <ProtectedRoute roles={["citizen"]}><ReportIssue /></ProtectedRoute>
-        } />
-        <Route path="dashboard" element={
-          <ProtectedRoute roles={["citizen"]}><Dashboard /></ProtectedRoute>
-        } />
 
-        {/* Staff console (step 8) */}
-        <Route path="manage" element={
-          <ProtectedRoute roles={["admin", "team"]}><Manage /></ProtectedRoute>
-        } />
-        <Route path="*" element={<ComingSoon title="Page not found" step="–" />} />
+        {/* Citizen-only pages */}
+        <Route
+          path="report"
+          element={
+            <ProtectedRoute roles={["citizen"]}>
+              <ReportIssue />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="dashboard"
+          element={
+            <ProtectedRoute roles={["citizen"]}>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Staff console */}
+        <Route
+          path="manage"
+          element={
+            <ProtectedRoute roles={["admin", "team"]}>
+              <Manage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin-only pages */}
+        <Route
+          path="admin"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+
+          <Route
+            path="issues"
+            element={<AdminIssues />}
+          />
+
+          <Route
+            path="duplicates"
+            element={<AdminDuplicates />}
+          />
+
+          <Route
+            path="users"
+            element={<AdminUsers />}
+          />
+        </Route>
+
+        {/* Fallback */}
+        <Route
+          path="*"
+          element={
+            <ComingSoon
+              title="Page not found"
+              step="–"
+            />
+          }
+        />
       </Route>
     </Routes>
   );
