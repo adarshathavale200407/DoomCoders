@@ -17,17 +17,26 @@ ALLOWED_ORIGINS = [
     if o.strip()
 ]
 
+from routers import auth, issues, stats  # noqa: E402  (after load_dotenv)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.client = AsyncIOMotorClient(MONGODB_URI) if MONGODB_URI else None
     app.state.db = app.state.client[DB_NAME] if app.state.client else None
+    if app.state.db is not None:
+        try:
+            await app.state.db.users.create_index("email", unique=True)
+            await app.state.db.issues.create_index([("status", 1), ("category", 1)])
+            await app.state.db.issues.create_index("reporter_id")
+        except Exception:  # noqa: BLE001 - never block startup on index creation
+            pass
     yield
     if app.state.client:
         app.state.client.close()
 
 
-app = FastAPI(title="Civic Fix API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Civic Fix API", version="0.2.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -36,6 +45,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth.router)
+app.include_router(issues.router)
+app.include_router(stats.router)
 
 
 @app.get("/")

@@ -1,5 +1,35 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
-body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+@theme {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  --color-paper: #f6f3ec;
+  --color-card: #fffdf8;
+  --color-ink: #1d2b27;
+  --color-muted: #6b7773;
+  --color-line: #e3ddd0;
+  --color-brand: #1f6f5c;
+  --color-brand-dark: #165343;
+  --color-accent: #e4572e;
+
+  /* priority + status colours (used in later steps) */
+  --color-critical: #c62828;
+  --color-high: #e4572e;
+  --color-medium: #d99a00;
+  --color-low: #4f8f6f;
 }
+
+html, body, #root { min-height: 100%; }
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
+
+:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }

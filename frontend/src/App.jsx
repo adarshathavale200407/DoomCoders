@@ -1,37 +1,40 @@
-import { useEffect, useState } from 'react'
-
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { Route, Routes } from "react-router-dom";
+import Layout from "./components/Layout.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import AuthPage from "./pages/AuthPage.jsx";
+import ComingSoon from "./pages/ComingSoon.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
+import Home from "./pages/Home.jsx";
+import IssueDetail from "./pages/IssueDetail.jsx";
+import Issues from "./pages/Issues.jsx";
+import NearbyMap from "./pages/NearbyMap.jsx";
+import ReportIssue from "./pages/ReportIssue.jsx";
+import Stats from "./pages/Stats.jsx";
 
 export default function App() {
-  const [health, setHealth] = useState(null)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    fetch(`${API_URL}/health`)
-      .then((r) => r.json())
-      .then(setHealth)
-      .catch((e) => setError(e.message))
-  }, [])
-
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="text-3xl font-bold text-emerald-700">Civic Fix</h1>
-        <p className="mt-2 text-slate-600">
-          Report civic issues. Track fixes. Hold the city accountable.
-        </p>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<Home />} />
+        <Route path="login" element={<AuthPage mode="login" />} />
+        <Route path="register" element={<AuthPage mode="register" />} />
+        <Route path="issues" element={<Issues />} />
+        <Route path="issues/:id" element={<IssueDetail />} />
+        <Route path="map" element={<NearbyMap />} />
+        <Route path="stats" element={<Stats />} />
+        <Route path="report" element={
+          <ProtectedRoute roles={["citizen"]}><ReportIssue /></ProtectedRoute>
+        } />
+        <Route path="dashboard" element={
+          <ProtectedRoute roles={["citizen"]}><Dashboard /></ProtectedRoute>
+        } />
 
-        <div className="mt-6 rounded-lg border border-slate-200 p-4 text-sm">
-          <p className="font-medium">Backend status</p>
-          {error && <p className="mt-1 text-red-600">Unreachable: {error}</p>}
-          {!error && !health && <p className="mt-1 text-slate-500">Checking…</p>}
-          {health && (
-            <p className="mt-1 text-emerald-700">
-              API: {health.status} · Database: {health.database}
-            </p>
-          )}
-        </div>
-      </div>
-    </main>
-  )
+        {/* Replaced step by step */}
+        <Route path="manage" element={
+          <ProtectedRoute roles={["admin", "team"]}><ComingSoon title="Management console" step={8} /></ProtectedRoute>
+        } />
+        <Route path="*" element={<ComingSoon title="Page not found" step="–" />} />
+      </Route>
+    </Routes>
+  );
 }
