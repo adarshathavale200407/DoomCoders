@@ -11,6 +11,11 @@ import Manage from "./pages/Manage.jsx";
 import NearbyMap from "./pages/NearbyMap.jsx";
 import ReportIssue from "./pages/ReportIssue.jsx";
 import Stats from "./pages/Stats.jsx";
+import AdminLayout from "./pages/admin/AdminLayout.jsx";
+import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
+import AdminIssues from "./pages/admin/AdminIssues.jsx";
+import AdminDuplicates from "./pages/admin/AdminDuplicates.jsx";
+import AdminUsers from "./pages/admin/AdminUsers.jsx";
 
 export default function App() {
   return (

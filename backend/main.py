@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from routers import admin, auth, issues, stats  # noqa: E402
+
 
 load_dotenv()
 
@@ -49,6 +51,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(issues.router)
 app.include_router(stats.router)
+app.include_router(admin.router)
 
 
 @app.get("/")

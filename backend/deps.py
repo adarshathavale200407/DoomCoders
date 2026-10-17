@@ -30,6 +30,10 @@ async def current_user_optional(
         raise HTTPException(status_code=401, detail="User no longer exists")
     return user
 
+    if user.get("banned"):
+        raise HTTPException(status_code=403, detail="Your account has been suspended")
+    return user
+
 
 async def current_user(user=Depends(current_user_optional)):
     if user is None:
@@ -48,3 +52,5 @@ def require_roles(*roles: str):
         return user
 
     return dependency
+
+require_admin = require_roles("admin")
