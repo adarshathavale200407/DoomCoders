@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import Home from "./pages/Home.jsx";
 import IssueDetail from "./pages/IssueDetail.jsx";
 import Issues from "./pages/Issues.jsx";
+import Manage from "./pages/Manage.jsx";
 import NearbyMap from "./pages/NearbyMap.jsx";
 import ReportIssue from "./pages/ReportIssue.jsx";
 import Stats from "./pages/Stats.jsx";
@@ -29,9 +30,9 @@ export default function App() {
           <ProtectedRoute roles={["citizen"]}><Dashboard /></ProtectedRoute>
         } />
 
-        {/* Replaced step by step */}
+        {/* Staff console (step 8) */}
         <Route path="manage" element={
-          <ProtectedRoute roles={["admin", "team"]}><ComingSoon title="Management console" step={8} /></ProtectedRoute>
+          <ProtectedRoute roles={["admin", "team"]}><Manage /></ProtectedRoute>
         } />
         <Route path="*" element={<ComingSoon title="Page not found" step="–" />} />
       </Route>

@@ -1,3 +1,5 @@
+from bson import ObjectId
+from bson.errors import InvalidId
 from fastapi import APIRouter, Depends, HTTPException
 
 from constants import CATEGORIES
@@ -122,6 +124,57 @@ async def list_issues(
     else:
         items.sort(key=lambda i: i["priority"]["score"], reverse=True)
     return items[: max(1, min(limit, 500))]
+
+
+@router.get("/manage")
+async def manage_list(
+    db=Depends(get_db),
+    user=Depends(require_roles("admin", "team")),
+):
+    """Feed for the staff console, sorted by priority.
+
+    Admins receive every issue; team members only ever receive issues assigned
+    to their own team (enforced here, not just hidden in the UI). Merged
+    duplicates are left out, and each issue carries `suggested_matches` with
+    readable titles so staff can review and merge them.
+    """
+    query: dict = {"status": {"$ne": "duplicate"}}
+    if user["role"] == "team":
+        if not user.get("team"):
+            return []
+        query["assigned_team"] = user["team"]
+
+    docs = await db.issues.find(query).to_list(2000)
+    now = utcnow()
+    items = [serialize_issue(d, user, now) for d in docs]
+
+    wanted = {m["id"] for i in items for m in i["possible_duplicates"]}
+    oids = []
+    for raw in wanted:
+        try:
+            oids.append(ObjectId(raw))
+        except (InvalidId, TypeError):
+            pass
+    targets = {}
+    if oids:
+        for t in await db.issues.find({"_id": {"$in": oids}}).to_list(len(oids)):
+            targets[str(t["_id"])] = t
+
+    for i in items:
+        i["suggested_matches"] = [
+            {
+                "id": m["id"],
+                "confidence": m["confidence"],
+                "title": targets[m["id"]]["title"],
+                "status": targets[m["id"]]["status"],
+                "upvotes": targets[m["id"]].get("upvotes", 0),
+            }
+            for m in i["possible_duplicates"]
+            if m["id"] in targets and targets[m["id"]]["status"] != "duplicate"
+        ]
+
+    items.sort(key=lambda i: i["priority"]["score"], reverse=True)
+    return items
 
 
 @router.get("/{issue_id}")
